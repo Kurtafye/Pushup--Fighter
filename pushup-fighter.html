@@ -6,6 +6,7 @@
 <title>PushUp Fighter</title>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.1.3/dist/pose-detection.min.js"></script>
+<script src="./performance-rank.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -18,7 +19,7 @@
     user-select: none;
   }
 
-  #screen-start, #screen-game, #screen-gameover {
+  #screen-start, #screen-game, #screen-gameover, #screen-profile {
     position: absolute; inset: 0; display: none; flex-direction: column;
     align-items: center; justify-content: center;
   }
@@ -37,9 +38,11 @@
   .game-logo span { color: #ffd700; }
   .tagline { font-size: 16px; color: #9988aa; letter-spacing: 2px; }
   .start-panel {
-    background: #1a1226; border: 1px solid #3a2a4a;
-    border-radius: 12px; padding: 28px 40px; max-width: 480px; width: 90%;
+    background: linear-gradient(180deg, rgba(26,18,38,0.98), rgba(14,10,22,0.98)); border: 1px solid #3a2a4a;
+    border-radius: 16px; padding: 28px 40px; max-width: 560px; width: 92%;
     display: flex; flex-direction: column; gap: 16px;
+    box-shadow: 0 0 40px rgba(0,0,0,0.3);
+    backdrop-filter: blur(12px);
   }
   .how-to { font-size: 13px; color: #aa99bb; line-height: 1.8; text-align: left; }
   .how-to strong { color: #ffd700; }
@@ -50,6 +53,18 @@
     font-size: 13px; transition: all 0.2s;
   }
   .diff-btn.selected { background: #2a1a3a; border-color: #9966cc; color: #cc99ff; }
+  .mode-pill {
+    flex: 1; padding: 10px 14px; border-radius: 10px; border: 1px solid #3a2a4a;
+    background: rgba(255,255,255,0.04); color: #aa99bb; cursor: pointer; text-align: center;
+    font-family: inherit; font-size: 13px; transition: all 0.2s;
+  }
+  .mode-pill.selected { background: linear-gradient(90deg, #ff6b35, #9933cc); color: #fff; border-color: transparent; }
+  .body-form { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .body-form input, .body-form select {
+    background: #120d19; border: 1px solid #3a2a4a; border-radius: 8px; padding: 10px 12px;
+    color: #f1e8ff; font-family: inherit; font-size: 13px;
+  }
+  .body-form label { font-size: 11px; color: #9988aa; text-transform: uppercase; letter-spacing: 1px; }
   .btn-start {
     padding: 14px 36px; font-size: 18px; font-family: inherit; font-weight: 700;
     background: #ff6b35; border: none; border-radius: 10px; color: #fff;
@@ -57,7 +72,69 @@
     transition: all 0.2s; box-shadow: 0 0 20px #ff6b3544;
   }
   .btn-start:hover { background: #ff8a55; box-shadow: 0 0 30px #ff6b3566; transform: scale(1.03); }
+  .btn-secondary {
+    padding: 10px 20px; font-size: 13px; font-family: inherit; font-weight: 700;
+    background: #20162d; border: 1px solid #3a2a4a; border-radius: 10px; color: #e8e0d0;
+    cursor: pointer; letter-spacing: 1px; text-transform: uppercase; transition: all 0.2s;
+  }
+  .btn-secondary:hover { background: #2d203b; border-color: #9966cc; transform: scale(1.02); }
   #cam-status { font-size: 12px; color: #776688; text-align: center; }
+
+  /* ── PROFILE SCREEN ── */
+  #screen-profile {
+    background: radial-gradient(ellipse at center, #1a1024 0%, #0a0a0f 70%);
+    padding: 24px;
+    overflow-y: auto;
+  }
+  .profile-shell {
+    width: min(1080px, 100%);
+    max-height: 92vh;
+    background: rgba(16, 12, 24, 0.96);
+    border: 1px solid #3a2a4a;
+    border-radius: 18px;
+    padding: 24px;
+    display: flex; flex-direction: column; gap: 16px;
+    box-shadow: 0 0 50px rgba(0,0,0,0.35);
+  }
+  .profile-topbar {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    flex-wrap: wrap;
+  }
+  .profile-title { font-size: 24px; font-weight: 800; color: #ffd700; }
+  .profile-subtitle { font-size: 13px; color: #9988aa; margin-top: 4px; }
+  .profile-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 16px; }
+  .profile-card { background: linear-gradient(180deg, rgba(22,17,31,0.98), rgba(12,9,18,0.98)); border: 1px solid #2a1f35; border-radius: 14px; padding: 16px; box-shadow: inset 0 0 20px rgba(255,255,255,0.02); }
+  .section-title { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #665577; margin-bottom: 10px; }
+  .rank-pill {
+    display: inline-flex; align-items: center; gap: 10px; padding: 10px 14px;
+    border-radius: 999px; background: linear-gradient(90deg, rgba(255,107,53,0.22), rgba(153,51,204,0.25)); border: 1px solid rgba(255,107,53,0.35);
+    color: #ffd700; font-weight: 800; margin-bottom: 10px;
+    box-shadow: inset 0 0 20px rgba(255,255,255,0.04);
+  }
+  .rank-pill .big { font-size: 20px; }
+  .rank-summary { color: #d8c7ff; font-size: 14px; line-height: 1.6; }
+  .meter { margin-top: 10px; }
+  .meter-label { display: flex; justify-content: space-between; color: #9988aa; font-size: 12px; margin-bottom: 6px; }
+  .meter-track { height: 10px; background: #22192f; border-radius: 999px; overflow: hidden; }
+  .meter-fill { height: 100%; background: linear-gradient(90deg, #ff6b35, #ffd700); width: 0%; transition: width 0.3s; }
+  .metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+  .metric-chip { background: #0f0b16; border: 1px solid #242033; border-radius: 10px; padding: 10px; }
+  .metric-chip .value { font-size: 18px; font-weight: 800; color: #fff; }
+  .metric-chip .label { font-size: 10px; letter-spacing: 1px; color: #665577; text-transform: uppercase; margin-top: 2px; }
+  .pill-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .pill { padding: 6px 10px; border-radius: 999px; background: #2a2037; color: #d8c7ff; font-size: 11px; border: 1px solid #3a2a4a; }
+  .history-canvas { width: 100%; height: 170px; display: block; margin-top: 8px; }
+  .list-stack { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+  .list-item { background: #0f0b16; border: 1px solid #242033; border-radius: 10px; padding: 10px 12px; color: #d8c7ff; font-size: 13px; }
+  .celebration-toast {
+    position: fixed; top: 24px; right: 24px; z-index: 1200; background: linear-gradient(90deg, #ff6b35, #9933cc);
+    color: #fff; padding: 12px 16px; border-radius: 999px; font-weight: 700; letter-spacing: 1px;
+    box-shadow: 0 0 25px rgba(255,107,53,0.35); animation: toastIn 0.35s ease-out forwards;
+  }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 
   /* ── GAME SCREEN ── */
   #screen-game {
@@ -127,8 +204,9 @@
   /* Top HUD */
   #hud {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 16px; background: #0c0c16; border-bottom: 1px solid #1a1a2a;
+    padding: 10px 16px; background: linear-gradient(180deg, rgba(12,12,22,0.98), rgba(8,8,14,0.98)); border-bottom: 1px solid #1a1a2a;
     flex-shrink: 0;
+    box-shadow: inset 0 -18px 40px rgba(255,255,255,0.02);
   }
   .hud-section { display: flex; flex-direction: column; gap: 4px; }
   .hud-name { font-size: 12px; color: #665577; letter-spacing: 1px; text-transform: uppercase; }
@@ -207,9 +285,10 @@
   .go-title { font-size: 52px; font-weight: 900; color: #cc2222; letter-spacing: 4px; }
   .go-title.win { color: #ffd700; }
   .go-panel {
-    background: #12101c; border: 1px solid #2a1a2a;
-    border-radius: 12px; padding: 28px 40px; min-width: 340px;
+    background: linear-gradient(180deg, rgba(18,16,28,0.98), rgba(10,9,16,0.98)); border: 1px solid #2a1a2a;
+    border-radius: 16px; padding: 28px 40px; min-width: 340px;
     display: flex; flex-direction: column; gap: 12px;
+    box-shadow: 0 0 30px rgba(0,0,0,0.25);
   }
   .go-stat { display: flex; justify-content: space-between; font-size: 15px; padding: 4px 0; border-bottom: 1px solid #1a1a2a; }
   .go-stat:last-child { border: none; }
@@ -264,6 +343,37 @@
       <strong>Down (chest near floor) → Up (arms extended)</strong> = 1 Rep = Damage dealt!<br><br>
       Build combos for bonus damage. Use special moves between reps.
     </div>
+    <div class="diff-row" style="margin-top:4px">
+      <button class="btn-secondary" id="btn-open-profile">View Performance</button>
+    </div>
+    <div>
+      <div style="font-size:11px;color:#554466;letter-spacing:1px;margin-bottom:8px;text-transform:uppercase">Body Profile</div>
+      <div class="body-form">
+        <div>
+          <label for="profile-weight">Weight (lbs)</label>
+          <input id="profile-weight" type="number" min="60" max="550" value="154">
+        </div>
+        <div>
+          <label for="profile-height">Height (ft)</label>
+          <input id="profile-height" type="number" min="4" max="8.5" step="0.1" value="5.75">
+        </div>
+        <div>
+          <label for="profile-gender">Gender</label>
+          <select id="profile-gender">
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other" selected>Other</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:11px;color:#554466;letter-spacing:1px;margin-bottom:8px;text-transform:uppercase">Mode</div>
+      <div class="diff-row">
+        <button class="mode-pill selected" data-mode="campaign">Campaign</button>
+        <button class="mode-pill" data-mode="endless">Endless</button>
+      </div>
+    </div>
     <div>
       <div style="font-size:11px;color:#554466;letter-spacing:1px;margin-bottom:8px;text-transform:uppercase">Difficulty</div>
       <div class="diff-row">
@@ -274,6 +384,64 @@
     </div>
     <button class="btn-start" id="btn-start">Begin Quest</button>
     <div id="cam-status">📷 Camera: not yet requested</div>
+  </div>
+</div>
+
+<!-- PROFILE / ANALYTICS SCREEN -->
+<div id="screen-profile">
+  <div class="profile-shell">
+    <div class="profile-topbar">
+      <div>
+        <div class="profile-title">Slayer Performance</div>
+        <div class="profile-subtitle">Your body is your weapon — track the ranks that matter.</div>
+      </div>
+      <button class="btn-secondary" id="btn-profile-back">Back to Quest</button>
+    </div>
+
+    <div class="profile-grid">
+      <div class="profile-card">
+        <div class="section-title">Push Rank</div>
+        <div class="rank-pill"><span class="big" id="profile-rank">F</span><span id="profile-title">F Rank Push Warrior</span></div>
+        <div class="rank-summary" id="profile-summary">Your current ranking is based on consecutive reps, weekly volume, consistency, streaks, and steady improvement.</div>
+        <div class="meter">
+          <div class="meter-label"><span>Rank Progress</span><span id="profile-progress-text">0 / 130</span></div>
+          <div class="meter-track"><div class="meter-fill" id="profile-progress-fill"></div></div>
+        </div>
+        <div class="metric-grid">
+          <div class="metric-chip"><div class="value" id="profile-level">1</div><div class="label">Player Level</div></div>
+          <div class="metric-chip"><div class="value" id="profile-campaign">0%</div><div class="label">Campaign</div></div>
+          <div class="metric-chip"><div class="value" id="profile-streak">0</div><div class="label">Current Streak</div></div>
+          <div class="metric-chip"><div class="value" id="profile-endurance">Novice</div><div class="label">Endurance Class</div></div>
+        </div>
+      </div>
+
+      <div class="profile-card">
+        <div class="section-title">Performance Snapshot</div>
+        <div class="metric-grid">
+          <div class="metric-chip"><div class="value" id="profile-weekly">0</div><div class="label">Weekly Push-ups</div></div>
+          <div class="metric-chip"><div class="value" id="profile-monthly">0</div><div class="label">Monthly Push-ups</div></div>
+          <div class="metric-chip"><div class="value" id="profile-lifetime">0</div><div class="label">Lifetime Push-ups</div></div>
+          <div class="metric-chip"><div class="value" id="profile-average">0</div><div class="label">Avg / Session</div></div>
+        </div>
+        <div class="pill-list" id="profile-achievements"></div>
+      </div>
+    </div>
+
+    <div class="profile-card">
+      <div class="section-title">Analytics Overview</div>
+      <div class="metric-grid" id="profile-analytics"></div>
+    </div>
+
+    <div class="profile-grid">
+      <div class="profile-card">
+        <div class="section-title">Recent PRs</div>
+        <div class="list-stack" id="profile-prs"></div>
+      </div>
+      <div class="profile-card">
+        <div class="section-title">Performance History</div>
+        <canvas class="history-canvas" id="profile-history-chart" width="600" height="180"></canvas>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -385,7 +553,10 @@
     <div class="go-stat"><span>Best Combo</span><span id="go-combo">0</span></div>
     <div class="go-stat"><span>Enemies Slain</span><span id="go-kills">0</span></div>
   </div>
-  <button class="btn-restart" id="btn-restart">Play Again</button>
+  <div class="diff-row" style="margin-top:8px">
+    <button class="btn-secondary" id="btn-open-profile-gameover">View Performance</button>
+    <button class="btn-restart" id="btn-restart">Play Again</button>
+  </div>
 </div>
 
 <script>
@@ -394,7 +565,9 @@
 // ══════════════════════════════════════════════════════
 const state = {
   screen: 'start',
+  previousScreen: 'start',
   difficulty: 'easy',
+  performanceStore: null,
   // Camera/pose
   detector: null,
   stream: null,
@@ -412,6 +585,7 @@ const state = {
   rageActive: false,
   rageTurns: 0,
   // Game
+  mode: 'campaign',
   wave: 1,
   playerHP: 100,
   playerMaxHP: 100,
@@ -956,6 +1130,20 @@ function completePushUp() {
   if (state.screen !== 'game') return;
   state.repCount++;
   state.totalReps++;
+  const snapshotBefore = state.performanceStore?.getSnapshot?.();
+  state.performanceStore?.recordPushUp({
+    now: Date.now(),
+    reps: 1,
+    combo: state.comboMultiplier,
+    wave: state.wave,
+    kills: state.kills,
+  });
+  const snapshotAfter = state.performanceStore?.getSnapshot?.();
+  if (snapshotAfter && snapshotBefore && snapshotAfter.recentPRs?.length !== snapshotBefore.recentPRs?.length) {
+    const latest = snapshotAfter.recentPRs?.[snapshotAfter.recentPRs.length - 1];
+    if (latest) showCelebration(`New Record! ${latest}`);
+  }
+  syncProfileUI();
   document.getElementById('rep-pending').textContent = '✓ Rep counted!';
   setTimeout(() => { if(document.getElementById('rep-pending')) document.getElementById('rep-pending').textContent = ''; }, 800);
 
@@ -1011,7 +1199,11 @@ function enemyDied() {
   clearInterval(state.enemyAttackTimer);
   state.kills++;
   addLog(state.enemy.killLine, 'system');
-  addLog(`Enemy defeated! Advancing to floor ${state.wave + 1}…`, 'system');
+  if (state.mode === 'endless') {
+    addLog(`Enemy defeated! Preparing floor ${state.wave + 1} in endless mode...`, 'system');
+  } else {
+    addLog(`Enemy defeated! Advancing to floor ${state.wave + 1}…`, 'system');
+  }
 
   if (state.rageActive) {
     state.rageTurns--;
@@ -1033,6 +1225,10 @@ function enemyDied() {
 function nextWave() {
   state.wave++;
   document.getElementById('wave-num').textContent = state.wave;
+  if (state.mode === 'campaign' && state.wave > 20) {
+    addLog('Campaign complete! Endless mode unlocked for future runs.', 'system');
+    state.mode = 'endless';
+  }
   state.repCount = 0;
   document.getElementById('rep-count').textContent = '0';
 
@@ -1183,13 +1379,155 @@ function setLoadMsg(msg, pct) {
 // SCREEN TRANSITIONS
 // ══════════════════════════════════════════════════════
 function showScreen(id) {
-  document.querySelectorAll('#screen-start,#screen-game,#screen-gameover').forEach(s => s.classList.remove('active'));
+  if (state.screen && state.screen !== id.replace('screen-', '')) {
+    state.previousScreen = state.screen;
+  }
+  document.querySelectorAll('#screen-start,#screen-game,#screen-gameover,#screen-profile').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   state.screen = id.replace('screen-', '');
 }
 
+function getSelectedBodyProfile() {
+  return {
+    weightLbs: Number(document.getElementById('profile-weight').value || 154),
+    heightFt: Number(document.getElementById('profile-height').value || 5.75),
+    gender: document.getElementById('profile-gender').value || 'other',
+  };
+}
+
+function showCelebration(message) {
+  const toast = document.createElement('div');
+  toast.className = 'celebration-toast';
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 1800);
+}
+
+function renderAnalytics(snapshot) {
+  const container = document.getElementById('profile-analytics');
+  if (!container) return;
+
+  const dailyEntries = Object.entries(snapshot.dailyVolumes || {});
+  const mostActiveDay = dailyEntries.length
+    ? dailyEntries.sort((a, b) => (b[1] || 0) - (a[1] || 0))[0][0]
+    : '—';
+
+  const analytics = [
+    ['Daily Volume', snapshot.totalPushupsToday || 0],
+    ['Weekly Trend', snapshot.weeklyPushups || 0],
+    ['Monthly Trend', snapshot.monthlyPushups || 0],
+    ['Lifetime Total', snapshot.lifetimePushups || 0],
+    ['Avg / Session', snapshot.averageRepsPerSession || 0],
+    ['Workout Frequency', snapshot.workoutSessions || 0],
+    ['Longest Streak', snapshot.longestStreak || 0],
+    ['Most Active Day', mostActiveDay],
+    ['Endurance Score', snapshot.maxConsecutivePushups || 0],
+    ['Push Rating', snapshot.pushRating || 0],
+    ['Relative Strength', snapshot.relativeStrength || 0],
+  ];
+
+  container.innerHTML = '';
+  analytics.forEach(([label, value]) => {
+    const chip = document.createElement('div');
+    chip.className = 'metric-chip';
+    chip.innerHTML = `<div class="value">${value}</div><div class="label">${label}</div>`;
+    container.appendChild(chip);
+  });
+}
+
+function syncProfileUI() {
+  const snapshot = state.performanceStore?.getSnapshot?.();
+  if (!snapshot) return;
+  document.getElementById('profile-rank').textContent = snapshot.slayerRank || 'F';
+  document.getElementById('profile-title').textContent = snapshot.title || 'F Rank Push Warrior';
+  document.getElementById('profile-summary').textContent = `${snapshot.title || 'F Rank Push Warrior'} • ${snapshot.enduranceClass || 'Novice'} endurance • ${snapshot.disciplineScore || 0} discipline • Relative strength ${snapshot.relativeStrength || 0}`;
+  document.getElementById('profile-progress-text').textContent = `${Math.min(130, snapshot.pushRating || 0)} / 130`;
+  const progressBar = document.getElementById('profile-progress-fill');
+  progressBar.style.width = `${Math.min(100, Math.round(((snapshot.pushRating || 0) / 130) * 100))}%`;
+  document.getElementById('profile-level').textContent = snapshot.level || 1;
+  document.getElementById('profile-campaign').textContent = `${snapshot.campaignProgress || 0}%`;
+  document.getElementById('profile-streak').textContent = snapshot.currentStreak || 0;
+  document.getElementById('profile-endurance').textContent = snapshot.enduranceClass || 'Novice';
+  document.getElementById('profile-weekly').textContent = snapshot.weeklyPushups || 0;
+  document.getElementById('profile-monthly').textContent = snapshot.monthlyPushups || 0;
+  document.getElementById('profile-lifetime').textContent = snapshot.lifetimePushups || 0;
+  document.getElementById('profile-average').textContent = snapshot.averageRepsPerSession || 0;
+  const achievements = document.getElementById('profile-achievements');
+  achievements.innerHTML = '';
+  (snapshot.achievements || []).forEach((item) => {
+    const pill = document.createElement('span');
+    pill.className = 'pill';
+    pill.textContent = item;
+    achievements.appendChild(pill);
+  });
+  const prs = document.getElementById('profile-prs');
+  prs.innerHTML = '';
+  (snapshot.recentPRs || []).forEach((item) => {
+    const entry = document.createElement('div');
+    entry.className = 'list-item';
+    entry.textContent = item;
+    prs.appendChild(entry);
+  });
+  if (!snapshot.recentPRs?.length) {
+    const empty = document.createElement('div');
+    empty.className = 'list-item';
+    empty.textContent = 'No personal records yet — every run can create one.';
+    prs.appendChild(empty);
+  }
+  renderAnalytics(snapshot);
+  drawHistoryChart(snapshot.rankHistory || []);
+}
+
+function drawHistoryChart(history) {
+  const canvas = document.getElementById('profile-history-chart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const width = canvas.width;
+  const height = canvas.height;
+  ctx.clearRect(0, 0, width, height);
+  ctx.strokeStyle = '#2a2037';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i += 1) {
+    const y = 20 + (height - 40) * (i / 4);
+    ctx.beginPath(); ctx.moveTo(10, y); ctx.lineTo(width - 10, y); ctx.stroke();
+  }
+  if (!history.length) {
+    ctx.fillStyle = '#9988aa';
+    ctx.font = '12px Georgia';
+    ctx.fillText('Rank history will appear as you train.', 24, height / 2);
+    return;
+  }
+  const values = history.map(item => item.score);
+  const maxValue = Math.max(130, ...values);
+  const minValue = Math.min(0, ...values);
+  const stepX = (width - 30) / Math.max(1, history.length - 1);
+  ctx.strokeStyle = '#ffd700';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  history.forEach((point, index) => {
+    const x = 15 + index * stepX;
+    const ratio = (point.score - minValue) / Math.max(1, maxValue - minValue);
+    const y = height - 20 - ratio * (height - 40);
+    if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  history.forEach((point, index) => {
+    const x = 15 + index * stepX;
+    const ratio = (point.score - minValue) / Math.max(1, maxValue - minValue);
+    const y = height - 20 - ratio * (height - 40);
+    ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fillStyle = '#ff6b35'; ctx.fill();
+  });
+}
+
 async function startGame() {
+  if (!state.performanceStore) {
+    state.performanceStore = new window.PerformanceProfileStore();
+  }
+  state.performanceStore.applyBodyProfile(getSelectedBodyProfile());
+  state.performanceStore.startWorkout(Date.now());
+  syncProfileUI();
   showScreen('screen-game');
+  state.mode = document.querySelector('.mode-pill.selected')?.dataset.mode || 'campaign';
   state.wave = 1;
   state.playerHP = 100; state.playerMaxHP = 100;
   state.repCount = 0; state.totalReps = 0;
@@ -1205,7 +1543,7 @@ async function startGame() {
   document.getElementById('enemy-name-hud').textContent = state.enemy.name;
   document.getElementById('enemy-sprite-name').textContent = state.enemy.name;
 
-  addLog('You descend into the dungeon…', 'system');
+  addLog(state.mode === 'endless' ? 'Endless mode unlocked — survive as long as you can!' : 'You descend into the dungeon…', 'system');
   addLog(`Floor 1: A ${state.enemy.name} blocks your path! (${state.enemy.hp} HP)`, 'system');
   addLog('Do push-ups to attack! Each rep deals damage.', 'system');
   addLog(`Combo x${state.comboMultiplier}: do reps quickly for multiplier!`, 'system');
@@ -1230,10 +1568,11 @@ async function startGame() {
 
 function gameOver(won = false) {
   clearInterval(state.enemyAttackTimer);
-  clearInterval(state.poseInterval);
+  if (state.poseInterval) clearInterval(state.poseInterval);
   state.poseInterval = null;
   cancelAnimationFrame(state.animFrame);
-  showScreen('screen-gameover');
+  state.performanceStore?.endWorkout({ now: Date.now() });
+  syncProfileUI();
   document.getElementById('go-title').textContent = won ? 'VICTORIOUS!' : 'DEFEATED';
   document.getElementById('go-title').className = 'go-title' + (won ? ' win' : '');
   document.getElementById('go-floor').textContent = state.wave;
@@ -1241,6 +1580,7 @@ function gameOver(won = false) {
   document.getElementById('go-dmg').textContent = state.totalDamage;
   document.getElementById('go-combo').textContent = state.bestCombo.toFixed(1) + '×';
   document.getElementById('go-kills').textContent = state.kills;
+  showScreen('screen-gameover');
 }
 
 // ══════════════════════════════════════════════════════
@@ -1287,13 +1627,49 @@ document.querySelectorAll('.diff-btn').forEach(btn => {
   });
 });
 
+document.querySelectorAll('.mode-pill').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-pill').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    state.mode = btn.dataset.mode;
+  });
+});
+
 document.getElementById('btn-start').addEventListener('click', async () => {
   await requestCamera();
   await startGame();
 });
 
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && state.screen === 'profile') {
+    showScreen(state.previousScreen === 'gameover' ? 'screen-gameover' : state.previousScreen === 'start' ? 'screen-start' : 'screen-game');
+  }
+});
+
+document.getElementById('btn-open-profile').addEventListener('click', () => {
+  syncProfileUI();
+  showScreen('screen-profile');
+});
+
+document.getElementById('btn-profile-back').addEventListener('click', () => {
+  if (state.screen === 'profile') {
+    showScreen(state.previousScreen === 'gameover' ? 'screen-gameover' : state.previousScreen === 'start' ? 'screen-start' : 'screen-game');
+  }
+});
+
+document.getElementById('btn-open-profile-gameover').addEventListener('click', () => {
+  syncProfileUI();
+  showScreen('screen-profile');
+});
+
 document.getElementById('btn-restart').addEventListener('click', async () => {
   await startGame();
+});
+
+window.addEventListener('beforeunload', () => {
+  if (state.enemyAttackTimer) clearInterval(state.enemyAttackTimer);
+  if (state.poseInterval) clearInterval(state.poseInterval);
+  cancelAnimationFrame(state.animFrame);
 });
 
 document.getElementById('btn-fireball').addEventListener('click', doFireball);
@@ -1305,6 +1681,8 @@ document.getElementById('btn-rage').addEventListener('click', doRage);
 // ══════════════════════════════════════════════════════
 (async () => {
   try {
+    state.performanceStore = new window.PerformanceProfileStore();
+    syncProfileUI();
     await initPoseDetector();
     setLoadMsg('Ready to fight!', 100);
     await new Promise(r => setTimeout(r, 500));
