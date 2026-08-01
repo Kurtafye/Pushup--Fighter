@@ -2,27 +2,14 @@
 
 > **Your body is your weapon.** A real-time dungeon RPG where push-ups deal damage and defeat monsters.
 
-Built by [SIKALORM](https://github.com/SIKALORM)
-
 ---
-
-## 🎮 Play Now
-
-👉 **[Play PushUp Fighter Live](https://sikalorm.github.io/pushup-fighter)**
-
-No download. No install. Just open and fight.
-
----
-
 ## 🧠 How It Works
 
 PushUp Fighter uses your webcam and **TensorFlow MoveNet** — a real-time AI pose detection model — to track your elbow angles as you do push-ups. Every full rep (down → up) is counted and converted into an attack against the enemy.
 
 - **Elbow angle < 100°** = DOWN position detected
 - **Elbow angle > 155°** = UP position detected → **Rep counted → Damage dealt!**
-
 ---
-
 ## ⚔️ Features
 
 - 🎯 **Real push-up detection** via AI pose estimation (no buttons, no cheating)
@@ -90,4 +77,5 @@ Free to use, modify, and distribute with credit.
 
 ---
 
+Built by [SIKALORM](https://github.com/SIKALORM)
 *Made with 💪 and sweat by SIKALORM*
